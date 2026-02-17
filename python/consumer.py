@@ -1,6 +1,7 @@
 import json
 from confluent_kafka import Consumer
 from datetime import datetime
+import time
 import psycopg2
 from config import KAFKA_BROKER, KAFKA_TOPIC, DB_CONFIG, INDEX_WEIGHTS
 
@@ -32,7 +33,7 @@ def save_base_price(symbol, price):
 # ==== NORMALIZE (base 1000) ====
 def calculate_index(base_prices, latest_prices, weights):
     index_value = 0
-    for symbol, weight in INDEX_WEIGHTS.items():
+    for symbol, weight in weights.items():
         if symbol in latest_prices and symbol in base_prices:
             # relative performance - ex:
             # if BTC 68000 to 69000: ~ 1.00 → 1.0147
@@ -102,6 +103,10 @@ if __name__ == "__main__":
     print("| Consumer started, waiting for messages |")
     print("- - - - - - - - - - - - - - - - - - - - -")
     try:
+        msg_count = 0
+        total_time = 0
+        bench_start = None
+
         while True:
             msg = consumer.poll(1.0)
             if msg is None:
@@ -109,7 +114,31 @@ if __name__ == "__main__":
             if msg.error():
                 print(f"❌ {msg.error()}")
                 continue
+
+            # ==== FOR BENCHMARK ====
+            # data = json.loads(msg.value())
+            # if data["symbol"] == "END":
+            #     if bench_start and msg_count > 0:
+            #         elapsed = time.time() - bench_start
+            #         print(f"\n{'='*50}")
+            #         print(f"BENCH: {msg_count} msgs in {elapsed:.3f}s")
+            #         print(f"Throughput: {msg_count/elapsed:,.0f} msg/s")
+            #         print(f"Avg latency: {total_time/msg_count:.3f}ms")
+            #         print(f"{'='*50}")
+            #     msg_count = 0
+            #     total_time = 0
+            #     bench_start = None
+            #     continue
+
+            # if bench_start is None:
+            #     bench_start = time.time()
+
+            # start = time.time()
             process_message(msg)
+            # elapsed_ms = (time.time() - start) * 1000
+            # msg_count += 1
+            # total_time += elapsed_ms
+
     finally:
         consumer.close()
         connect.close()
