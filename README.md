@@ -1,5 +1,5 @@
 # Architecture
-
+```
 ┌─────────────────────┐
 │Binance WebSocket API│
 └─────────────────────┘
@@ -36,6 +36,47 @@
     ├── index_weights (BTC=0.40, ETH=0.25, SOL=0.15, BNB=0.10, XRP=0.10)
     ├── index_values (index price)
     └── base_price (storing the initial prices for performance comparison)
+```
+
+## Usage
+
+### Setup
+```bash
+docker-compose up -d
+```
+
+# Python environment
+```bash
+cd python
+python -m venv .venv
+source .venv/bin/activate
+pip install confluent-kafka websocket-client psycopg2-binary pytest
+```
+
+## Run
+```bash
+cd python
+# Terminal 1 - Producer (live Binance prices)
+python producer.py
+
+# Terminal 2 — Consumer (Kafka → DB)
+python consumer.py
+```
+
+### Tests
+```bash
+cd python && PYTHONPATH=. pytest tests/ -v
+```
+
+
+### Stress Test
+```bash
+# Terminal 1 — Consumer running
+python consumer.py
+
+# Terminal 2 — Send 100k messages
+PYTHONPATH=. python tests/stress_test.py
+```
 
 # Benchmark Results
 
